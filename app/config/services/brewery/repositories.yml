@@ -1,0 +1,4 @@
+services:
+    app.repository.brewery:
+        class: AppBundle\Repository\BreweryRepository
+        arguments: ['@doctrine.dbal.default_connection']
