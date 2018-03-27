@@ -10,11 +10,17 @@ class Brewery
     /** @var string */
     private $name;
 
-    /** @var string */
+    /** @var float */
     private $latitude;
 
-    /** @var string */
+    /** @var float */
     private $longitude;
+
+    /** @var array */
+    private $beers = [];
+
+    /** @var int */
+    private $distance = 0;
 
     /**
      * @return int
@@ -49,34 +55,66 @@ class Brewery
     }
 
     /**
-     * @return string
+     * @return float
      */
-    public function getLatitude()
+    public function getLatitude(): float
     {
         return $this->latitude;
     }
 
     /**
-     * @param string $latitude
+     * @param float $latitude
      */
-    public function setLatitude($latitude)
+    public function setLatitude(float $latitude)
     {
         $this->latitude = $latitude;
     }
 
     /**
-     * @return string
+     * @return float
      */
-    public function getLongitude()
+    public function getLongitude(): float
     {
         return $this->longitude;
     }
 
     /**
-     * @param string $longitude
+     * @param float $longitude
      */
-    public function setLongitude($longitude)
+    public function setLongitude(float $longitude)
     {
         $this->longitude = $longitude;
+    }
+
+    /**
+     * @return array
+     */
+    public function getBeers(): array
+    {
+        return $this->beers;
+    }
+
+    /**
+     * @param array $beers
+     */
+    public function setBeers(array $beers)
+    {
+        $this->beers = $beers;
+    }
+
+    /**
+     * @return int
+     */
+    public function getDistance(): int
+    {
+        return $this->distance;
+    }
+
+    /**
+     * @param int $distance
+     */
+    public function setDistance(int $distance)
+    {
+        $this->distance = $distance;
     }
 }

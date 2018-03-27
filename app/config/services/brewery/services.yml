@@ -1,2 +1,7 @@
 imports:
     - { resource: repositories.yml }
+
+services:
+    app.service.brewery:
+        class: AppBundle\Service\BreweryService
+        arguments: ['@app.repository.brewery']
