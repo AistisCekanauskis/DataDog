@@ -26,12 +26,12 @@ class BreweryOutputManager
     public function outputBreweriesRoutes(array $visitedBreweries)
     {
         $totalDistance = 0;
-        $this->output->writeln(sprintf("Found %s breweries:", count($visitedBreweries) - 2));
+        $this->output->writeln(sprintf("Found %s breweries: \n", count($visitedBreweries) - 2));
         foreach ($visitedBreweries as $brewery) {
             $this->output->writeln(
                 sprintf(
                     "-> %s %s: %s, %s distance %skm",
-                    $brewery->getId(),
+                    $brewery->getId() ? "[{$brewery->getId()}]" : '',
                     $brewery->getName(),
                     $brewery->getLatitude(),
                     $brewery->getLongitude(),
@@ -48,8 +48,6 @@ class BreweryOutputManager
      */
     public function outputBeersList(array $beersList)
     {
-        $beersList = array_unique($beersList);
-        sort($beersList);
         $this->output->writeln(sprintf("Collected %s beer types:", count($beersList)));
         foreach ($beersList as $beer) {
             $this->output->writeln(sprintf("-> %s", $beer));

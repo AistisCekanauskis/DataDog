@@ -22,6 +22,15 @@ class BreweryService
     /** @var array */
     private $uniqueBeers = [];
 
+    /** @var Brewery */
+    private $firstBrewery;
+
+    /** @var int */
+    private $distanceLeft = self::FULL_TRAVEL_DISTANCE;
+
+    /** @var bool */
+    private $finished = false;
+
     /**
      * Service constructor.
      * @param BreweryRepository $repository
@@ -69,66 +78,63 @@ class BreweryService
      */
     public function filterBreweries(Brewery $startingBrewery)
     {
-        $totalDistance = 0;
-        $firstBrewery = $startingBrewery;
+        $this->firstBrewery = $startingBrewery;
         $visitedBreweries = [$startingBrewery];
 
         $breweries = $this->getClosestBreweries($startingBrewery);
 
         do {
-            $filteredBrewery = $this->getHighestScoreBrewery($startingBrewery, $breweries);
-            $distanceTillFirst = $this->getDistanceTillFirstBrewery($startingBrewery, $firstBrewery);
-            if ($totalDistance + $distanceTillFirst < self::FULL_TRAVEL_DISTANCE) {
-                $totalDistance += $filteredBrewery->getDistance();
-                $startingBrewery = $filteredBrewery;
-                $visitedBreweries[] = $filteredBrewery;
-            } else {
-                $firstBrewery->setDistance($distanceTillFirst);
-                $visitedBreweries[] = $firstBrewery;
+            $nextBrewery = $this->getNextBrewery($startingBrewery, $breweries);
 
-                break;
-            }
-        } while ($totalDistance < self::FULL_TRAVEL_DISTANCE);
+            $this->visitedBreweriesIds[] = $nextBrewery->getId();
+            $this->uniqueBeers = array_merge($this->uniqueBeers, $nextBrewery->getBeers());
+            $this->distanceLeft -= $nextBrewery->getDistance();
+
+            $startingBrewery = $nextBrewery;
+            $visitedBreweries[] = $nextBrewery;
+        } while ($this->finished === false);
 
         return $visitedBreweries;
     }
     
     /**
+     * Gets next brewery with most unique beers and lowest distance - lowest $score
      * @param Brewery $startingBrewery
      * @param Brewery[] $breweries
      * @return Brewery
      */
-    private function getHighestScoreBrewery(Brewery $startingBrewery, array $breweries): Brewery
+    private function getNextBrewery(Brewery $startingBrewery, array $breweries): Brewery
     {
-        $score = self::HALF_TRAVEL_DISTANCE;
+        $score = self::FULL_TRAVEL_DISTANCE;
         $bestMatch = null;
 
         /** @var Brewery $brewery */
-        foreach ($breweries as $key => $brewery) {
-            if (in_array($brewery->getId(), $this->visitedBreweriesIds)) {
+        foreach ($breweries as $key => $nextBrewery) {
+            if (in_array($nextBrewery->getId(), $this->visitedBreweriesIds)) {
                 continue;
             }
 
-            if (empty($brewery->getDistance())) {
-                $distance = $this->calculateDistance(
-                    $startingBrewery->getLongitude(),
-                    $startingBrewery->getLatitude(),
-                    $brewery->getLongitude(),
-                    $brewery->getLatitude()
-                );
-            } else {
-                $distance = $brewery->getDistance();
-            }
+            $distanceTillNext = $this->getDistanceTillNextBrewery($startingBrewery, $nextBrewery);
+            $distanceTillFirst = $this->getDistanceTillFirstBrewery($nextBrewery);
+            $totalDistance = $distanceTillNext + $distanceTillFirst;
 
-            $newBeersCount = count(array_diff($brewery->getBeers(), $this->uniqueBeers));
-            if ($score > $distance / $newBeersCount) {
-                $score = $distance / $newBeersCount;
-                $brewery->setDistance($distance);
-                $bestMatch = $brewery;
+            $uniqueBeersCount = count(array_diff($nextBrewery->getBeers(), $this->uniqueBeers));
+            $uniqueBeersCount === 0 && $uniqueBeersCount = 1;
+
+            $newScore = $totalDistance / $uniqueBeersCount;
+
+            if ($score > $newScore && $totalDistance < $this->distanceLeft) {
+                $score = $newScore;
+                $nextBrewery->setDistance($distanceTillNext);
+                $bestMatch = $nextBrewery;
             }
         }
-        $this->visitedBreweriesIds[] = $bestMatch->getId();
-        $this->uniqueBeers = array_merge($this->uniqueBeers, $bestMatch->getBeers());
+
+        if ($bestMatch === null) {
+            $bestMatch = clone $this->firstBrewery;
+            $bestMatch->setDistance($this->getDistanceTillFirstBrewery($startingBrewery));
+            $this->finished = true;
+        }
 
         return $bestMatch;
     }
@@ -152,7 +158,6 @@ class BreweryService
                 $breweryFromDb->getLatitude()
             );
             if ($distance < self::HALF_TRAVEL_DISTANCE) {
-                $breweryFromDb->setDistance($distance);
                 $filteredBreweries[] = $breweryFromDb;
             }
         }
@@ -166,15 +171,30 @@ class BreweryService
 
     /**
      * @param Brewery $breweryFrom
+     * @param Brewery $nextBrewery
      * @return int
      */
-    private function getDistanceTillFirstBrewery(Brewery $breweryFrom, Brewery $firstBrewery)
+    private function getDistanceTillNextBrewery(Brewery $breweryFrom, Brewery $nextBrewery)
     {
         return $this->calculateDistance(
             $breweryFrom->getLongitude(),
             $breweryFrom->getLatitude(),
-            $firstBrewery->getLongitude(),
-            $firstBrewery->getLatitude()
+            $nextBrewery->getLongitude(),
+            $nextBrewery->getLatitude()
+        );
+    }
+
+    /**
+     * @param Brewery $breweryFrom
+     * @return int
+     */
+    private function getDistanceTillFirstBrewery(Brewery $breweryFrom)
+    {
+        return $this->calculateDistance(
+            $breweryFrom->getLongitude(),
+            $breweryFrom->getLatitude(),
+            $this->firstBrewery->getLongitude(),
+            $this->firstBrewery->getLatitude()
         );
     }
 
@@ -206,7 +226,10 @@ class BreweryService
         foreach ($visitedBreweries as $brewery) {
             $uniqueBeers[] = $brewery->getBeers();
         }
-        return array_merge(...$uniqueBeers);
+        $uniqueBeers = array_unique(array_merge(...$uniqueBeers));
+        sort($uniqueBeers);
+
+        return $uniqueBeers;
     }
 
 }
