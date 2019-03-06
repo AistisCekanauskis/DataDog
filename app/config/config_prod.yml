@@ -1,22 +1,24 @@
-imports:
-    - { resource: config.yml }
-
-#doctrine:
-#    orm:
-#        metadata_cache_driver: apc
-#        result_cache_driver: apc
-#        query_cache_driver: apc
-
-monolog:
-    handlers:
-        main:
-            type: fingers_crossed
-            action_level: error
-            handler: nested
-        nested:
-            type: stream
-            path: '%kernel.logs_dir%/%kernel.environment%.log'
-            level: debug
-        console:
-            type: console
-            process_psr_3_messages: false
+framework:
+    workflows:
+        creditcard_application_flow:
+            type: 'state_machine' # 'workflow' or 'state_machine', defaults to 'workflow'
+            marking_store:
+                type: 'single_state' # 'single_state or 'multiple_state'
+            supports: # the Subject entity. No longer required in Symfony 3.3+
+                - AppBundle\Entity\CreditcardApplication
+            places:
+                - start
+                - email_confirmed
+                - application_validated
+                - card_created
+                - card_activated
+            transitions:
+                confirm_email:
+                    from: start
+                    to:   email_confirmed
+                validate_application:
+                    from: email_confirmed
+                    to:   application_validated
+                create_card:
+                    from: application_validated
+                    to:   card_created
