@@ -1,6 +1,2 @@
-send_card:
-    from: card_created
-    to: card_sent
-destroy card:
-    from: card_created
-    to : card destroyed
+- card_sent
+- card_destroyed
